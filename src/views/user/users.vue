@@ -60,7 +60,7 @@
               @click="removeUserById(scope.row.id)"
               >删除</el-button
             >
-            <el-button type="warning" icon="el-icon-setting" size="small"
+            <el-button type="warning" icon="el-icon-setting" size="small" @click="setRole(scope.row)"
               >分配角色</el-button
             >
           </template>
@@ -141,6 +141,35 @@
           >
         </span>
       </el-dialog>
+      <el-dialog
+        title="分配角色"
+        :visible.sync="setRoleDialogVisible"
+        width="30%"
+        @close="setRoleDialogClosed">
+        <div>
+          <p>当前用户：{{ userInfo.username }}</p>
+          <p>当前角色：{{ userInfo.role_name }}</p>
+          <p>分配角色：
+            <el-select
+              v-model="selectedRoleId"
+              placeholder="请选择"
+            >
+              <el-option 
+                v-for="item in rolesList" 
+                :key="item.id" 
+                :label="item.roleName"
+                :value="item.id"
+              >
+
+              </el-option>
+            </el-select>
+          </p>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="setRoleDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="saveRoleInfo">确 定</el-button>
+        </span>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -172,11 +201,15 @@ export default {
         pagenum: 1,
         pagesize: 2,
       },
+      setRoleDialogVisible:false,//控制角色分配的显示隐藏
       userList: [],
       total: 0,
+      userInfo:{},//需要被分配角色用户信息
+      rolesList:{},//所有角色的列表
       AddDialogVisible: false, //弹出框的显示隐藏
       editDialogVisible:false,//修改用户弹出框的显示隐藏
       editForm:{},//查询到的用户信息对象
+      selectedRoleId:{},//选中的角色
       /* 表单字段 */
       addForm: {
         username: "",
@@ -385,6 +418,38 @@ export default {
       }
       this.$message.success('用户删除成功')
       this.getUserList()
+    },
+    /* 分配角色 */
+    async setRole(userInfo){
+      this.userInfo = userInfo
+      /* 页面加载获取角色 */
+      const { data:rores} = await this.$http.get('roles')
+      if(rores.meta.status !== 200){
+        return this.$message.error('角色获取失败')
+      }
+      this.rolesList = rores.data
+      this.setRoleDialogVisible = true
+    },
+    async saveRoleInfo(){
+      if(!this.selectedRoleId){
+        return this.$message.error('请选择分配的角色')
+      }
+      const{data:roledata} = await this.$http.put(`users/${this.userInfo.id}/role`,{
+        rid:this.selectedRoleId
+      })
+      console.log(roledata)
+      if(roledata.meta.status !== 200){
+        return this.$message.error('更新用户角色失败')
+      }else if(roledata.meta.status === 400){
+        return this.$message.error('不允许修改admin账户')
+      }
+      this.$message.success('更新角色成功')
+      this.getUserList()
+      this.setRoleDialogVisible = false
+    },
+    setRoleDialogClosed(){
+        this.selectedRoleId =''
+        this.userInfo = {}
     }
   },
 };
