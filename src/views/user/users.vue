@@ -439,13 +439,15 @@ export default {
       })
       console.log(roledata)
       if(roledata.meta.status !== 200){
-        return this.$message.error('更新用户角色失败')
+        this.$message.error('更新用户角色失败')
       }else if(roledata.meta.status === 400){
-        return this.$message.error('不允许修改admin账户')
+        this.$message.error(roledata.msg)
+      }else{
+        this.$message.success('更新角色成功')
+        this.getUserList()
+        this.setRoleDialogVisible = false
       }
-      this.$message.success('更新角色成功')
-      this.getUserList()
-      this.setRoleDialogVisible = false
+      
     },
     setRoleDialogClosed(){
         this.selectedRoleId =''
